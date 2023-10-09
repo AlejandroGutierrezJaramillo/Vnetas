@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CRUD de Ventas</title>
+</head>
+<body>
+    <h1>CRUD de Ventas</h1>
+
+    <!-- Formulario para agregar o editar una venta -->
+    <form id="saleForm">
+        <input type="hidden" id="editId">
+        <label for="producto">Producto:</label>
+        <input type="text" id="producto" required>
+        <br>
+        <label for="cantidad">Cantidad:</label>
+        <input type="number" id="cantidad" required>
+        <br>
+        <label for="precio">Precio:</label>
+        <input type="number" id="precio" required>
+        <br>
+        <button type="submit" id="saveButton">Guardar</button>
+        <button type="button" id="cancelButton">Cancelar</button>
+    </form>
+
+    <!-- Lista de ventas -->
+    <ul id="salesList"></ul>
+
+    <script>
+        const saleForm = document.getElementById("saleForm");
+        const editIdInput = document.getElementById("editId");
+        const productoInput = document.getElementById("producto");
+        const cantidadInput = document.getElementById("cantidad");
+        const precioInput = document.getElementById("precio");
+        const saveButton = document.getElementById("saveButton");
+        const cancelButton = document.getElementById("cancelButton");
+        const salesList = document.getElementById("salesList");
+
+        // Función para cargar la lista de ventas
+        function loadSales() {
+            fetch("crud.php")
+                .then((response) => response.json())
+                .then((data) => {
+                    salesList.innerHTML = "";
+                    data.forEach((sale) => {
+                        const listItem = document.createElement("li");
+                        listItem.innerHTML = `${sale.producto} - Cantidad: ${sale.cantidad}, Precio: $${sale.precio} <button onclick="editSale(${sale.id})">Editar</button> <button onclick="deleteSale(${sale.id})">Eliminar</button>`;
+                        salesList.appendChild(listItem);
+                    });
+                });
+        }
+
+        // Función para limpiar el formulario
+        function clearForm() {
+            editIdInput.value = "";
+            productoInput.value = "";
+            cantidadInput.value = "";
+            precioInput.value = "";
+        }
+
+        // Función para agregar o editar una venta
+        saleForm.addEventListener("submit", (e) => {
+            e.preventDefault();
+
+            const data = {
+                id: editIdInput.value,
+                producto: productoInput.value,
+                cantidad: cantidadInput.value,
+                precio: precioInput.value,
+            };
+
+            const method = editIdInput.value ? "PUT" : "POST";
+            const url = editIdInput.value ? `crud.php?id=${data.id}` : "crud.php";
+
+            fetch(url, {
+                method: method,
+                body: JSON.stringify(data),
+            })
+                .then((response) => response.text())
+                .then((message) => {
+                    console.log(message);
+                    loadSales();
+                    clearForm();
+                });
+        });
+
+        // Función para editar una venta
+        function editSale(id) {
+            fetch(`crud.php?id=${id}`)
+                .then((response) => response.json())
+                .then((data) => {
+                    editIdInput.value = data.id;
+                    productoInput.value = data.producto;
+                    cantidadInput.value = data.cantidad;
+                    precioInput.value = data.precio;
+
+                    saveButton.textContent = "Actualizar";
+                    cancelButton.style.display = "inline-block";
+                });
+        }
+
+        // Función para cancelar la edición
+        cancelButton.addEventListener("click", () => {
+            clearForm();
+            saveButton.textContent = "Guardar";
+            cancelButton.style.display = "none";
+        });
+
+        // Función para eliminar una venta
+        function deleteSale(id) {
+            if (confirm("¿Estás seguro de eliminar esta venta?")) {
+                fetch(`crud.php?id=${id}`, {
+                    method: "DELETE",
+                })
+                    .then((response) => response.text())
+                    .then((message) => {
+                        console.log(message);
+                        loadSales();
+                        clearForm();
+                    });
+            }
+        }
+
+        // Cargar la lista de ventas al cargar la página
+        loadSales();
+    </script>
+</body>
+</html>
